@@ -120,12 +120,7 @@ function robotMoves() {
     const cells = Array.from(gameBoard.children);
     const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
     // Роботы будут делать по три хода за один ход игрока
-    for (let j = 0; j < 3; j++) {
-      if (emptyCells.length > 0) {
-        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        makeMove(robotClass, randomCell);
-      }
-    }
+   
   }
   currentPlayer = 'player'; // Возвращаем ход игроку
 }
