@@ -18,6 +18,9 @@
   }
   .player { background-color: red; }
   .robot { background-color: blue; }
+  .robot { background-color: green; }
+  .robot { background-color: yellow; }
+  .robot { background-color: blue; }
   .stats {
     margin-bottom: 10px;
   }
@@ -197,57 +200,19 @@ corners.forEach(corner => {
 updateStatsDisplay();
 updateShopMenu();
 
-// Функции оценки для разных стратегий
-function aggressiveStrategy(cell, playerClass) {
-  // Агрессивная стратегия: оценивает ходы на основе максимального захвата территории
-  let score = 0;
-  // ... (логика оценки хода)
-  return score;
-}
 
-function defensiveStrategy(cell, playerClass) {
-  // Оборонительная стратегия: оценивает ходы на основе защиты своих клеток
-  let score = 0;
-  // ... (логика оценки хода)
-  return score;
-}
 
-function expansionStrategy(cell, playerClass) {
-  // Стратегия расширения: оценивает ходы на основе расширения территории
-  let score = 0;
-  // ... (логика оценки хода)
-  return score;
-}
-
-function randomStrategy(cell, playerClass) {
-  // Случайная стратегия: выбирает ходы случайным образом
-  return Math.random();
-}
-
-// Функция для выбора стратегии робота
-function chooseRobotStrategy(robotId) {
-  switch (robotId) {
-    case 1: return aggressiveStrategy;
-    case 2: return defensiveStrategy;
-    case 3: return expansionStrategy;
-    case 4: return randomStrategy;
-    // Робот 5 без стратегии, возвращает нулевой счет
-    default: return () => 0;
-  }
-}
-
-// Функция robotMoves обновлена для поддержки множества роботов
-function robotMoves(robotId) {
-  const robotClass = 'robot' + robotId;
-  const strategy = chooseRobotStrategy(robotId);
+  // Агрессивная стратегия: Робот старается захватить как можно больше клеток
+function aggressiveStrategy() {
+  const robotClass = 'robot';
   const cells = Array.from(gameBoard.children);
   const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
   let bestMove = null;
   let bestScore = -Infinity;
 
-  // Робот выбирает лучший ход на основе выбранной стратегии
+  // Робот выбирает ход, который дает максимальное количество соседних клеток
   for (let j = 0; j < emptyCells.length; j++) {
-    const currentScore = strategy(emptyCells[j], robotClass);
+    const currentScore = evaluateMove(emptyCells[j], robotClass);
     if (currentScore > bestScore) {
       bestScore = currentScore;
       bestMove = emptyCells[j];
@@ -259,12 +224,51 @@ function robotMoves(robotId) {
   }
 }
 
-// ... (остальная часть кода игры)
+// Оборонительная стратегия: Робот старается блокировать ходы игрока
+function defensiveStrategy() {
+  const robotClass = 'robot';
+  const playerClass = 'player';
+  const cells = Array.from(gameBoard.children);
+  const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass) && !cell.classList.contains(playerClass));
+  let bestMove = null;
+  let bestScore = -Infinity;
 
-// Инициализация роботов и их стратегий
-for (let i = 1; i <= 5; i++) {
-  robotMoves(i);
+  // Робот выбирает ход, который блокирует потенциально выигрышные ходы игрока
+  for (let j = 0; j < emptyCells.length; j++) {
+    const currentScore = -evaluateMove(emptyCells[j], playerClass);
+    if (currentScore > bestScore) {
+      bestScore = currentScore;
+      bestMove = emptyCells[j];
+    }
+  }
+
+  if (bestMove) {
+    makeMove(robotClass, bestMove);
+  }
 }
+
+// Сбалансированная стратегия: Робот чередует агрессивные и оборонительные ходы
+function balancedStrategy() {
+  const turnNumber = Math.floor(Math.random() * 10);
+  if (turnNumber % 2 === 0) {
+    aggressiveStrategy();
+  } else {
+    defensiveStrategy();
+  }
+}
+
+// Реализация выбора стратегии ИИ
+function robotMoves() {
+  // Выбор стратегии в зависимости от ситуации
+  if (resources['robot'] > resources['player']) {
+    aggressiveStrategy();
+  } else if (influence['player'] > influence['robot']) {
+    defensiveStrategy();
+  } else {
+    balancedStrategy();
+  }
+}
+
 
 </script>
 </body>
