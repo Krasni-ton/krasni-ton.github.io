@@ -1,1 +1,0 @@
-# krasni-ton.github.io
