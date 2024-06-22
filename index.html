@@ -173,8 +173,22 @@ function makeMove(playerClass, cell) {
 // Инициализация игры и первоначальное распределение клеток
 function initializeGame() {
   // Распределение начальных ресурсов и влияния
-  gameBoard.childNodes.forEach(cell => {
+  gameBoard.childNodes.forEach((cell, index) => {
     cell.resources = Math.floor(Math.random() * 100); // Предположим, что каждая клетка имеет случайное количество ресурсов от 0 до 99
+    // Распределение начальных цветов
+    if (index < boardSize) {
+      cell.classList.add('player');
+      influence['player']++;
+    } else if (index >= boardSize && index < boardSize * 2) {
+      cell.classList.add('robot1');
+      influence['robot1']++;
+    } else if (index >= boardSize * 2 && index < boardSize * 3) {
+      cell.classList.add('robot2');
+      influence['robot2']++;
+    } else if (index >= boardSize * 3 && index < boardSize * 4) {
+      cell.classList.add('robot3');
+      influence['robot3']++;
+    }
   });
   updateStatsDisplay();
   updateShopMenu();
