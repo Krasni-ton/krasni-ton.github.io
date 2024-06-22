@@ -92,6 +92,7 @@ function updateShopMenu() {
 // Логика игры
 let currentPlayer = 'player';
 const players = ['player', 'robot1', 'robot2', 'robot3'];
+let skipTurnChance = 0.25; // Изначальный шанс пропуска хода
 
 gameBoard.addEventListener('click', function(event) {
   if (event.target.classList.contains('cell')) {
@@ -102,8 +103,8 @@ gameBoard.addEventListener('click', function(event) {
 });
 
 function shouldSkipMove() {
-  // Возвращает true с вероятностью 25%
-  return Math.random() < 0.20;
+  // Возвращает true с вероятностью, равной skipTurnChance
+  return Math.random() < skipTurnChance;
 }
 
 function switchPlayer() {
@@ -131,18 +132,11 @@ function updateEconomy(player) {
   influence[player] += 1;
 }
 
-function isAdjacent(player, cell) {
-  // Получаем индекс текущей клетки
-  const index = Array.from(cell.parentNode.children).indexOf(cell);
-  const row = Math.floor(index / boardSize);
-  const col = index % boardSize;
-
-  
 function makeMove(player, cell) {
   if (shouldSkipMove()) {
     alert(player + ' пропускает ход!');
   } else {
-    if (!cell.classList.contains(player) && isAdjacent(player, cell)) {
+    if (!cell.classList.contains(player)) {
       players.forEach(p => cell.classList.remove(p));
       cell.classList.add(player);
       updateEconomy(player); // Обновляем экономику после успешного хода
@@ -155,7 +149,8 @@ function purchaseUpgrade(player, upgrade) {
   if (resources[player] >= upgrades[upgrade]) {
     resources[player] -= upgrades[upgrade];
     if (upgrade === 'skipTurnReduction') {
-      // Уменьшаем вероятность пропуска хода
+      skipTurnChance -= 0.05; // Уменьшаем шанс пропуска хода на 5%
+      skipTurnChance = Math.max(skipTurnChance, 0); // Гарантируем, что шанс не уйдет в отрицательное значение
     } else if (upgrade === 'extraCellPlacement') {
       // Позволяем ставить на одну клетку больше
     }
@@ -176,50 +171,6 @@ corners.forEach(corner => {
   cell.classList.add(corner.player);
 });
 
-function checkAdjacentCells(cellIndex, player) {
-  let adjacentIndices = [
-    cellIndex - boardSize, // верх
-    cellIndex + boardSize, // низ
-    cellIndex - 1, // лево
-    cellIndex + 1 // право
-  ];
-  // Удаление индексов, выходящих за пределы доски
-  adjacentIndices = adjacentIndices.filter(index => index >= 0 && index < boardSize * boardSize);
-  // Удаление индексов из другого ряда
-  if (cellIndex % boardSize === 0) {
-    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== boardSize - 1);
-  }
-  if ((cellIndex + 1) % boardSize === 0) {
-    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== 0);
-  }
-  
-}
-function captureEnemyCells(cellIndex, player) {
-  let adjacentIndices = [
-    cellIndex - boardSize, // верх
-    cellIndex + boardSize, // низ
-    cellIndex - 1, // лево
-    cellIndex + 1 // право
-  ];
-  // Удаление индексов, выходящих за пределы доски
-  adjacentIndices = adjacentIndices.filter(index => index >= 0 && index < boardSize * boardSize);
-  // Удаление индексов из другого ряда
-  if (cellIndex % boardSize === 0) {
-    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== boardSize - 1);
-  }
-  if ((cellIndex + 1) % boardSize === 0) {
-    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== 0);
-  }
-  // Проверка и захват соседних клеток противника
-  adjacentIndices.forEach(index => {
-    const adjacentCell = gameBoard.children[index];
-    // Проверяем, принадлежит ли клетка противнику
-    if (adjacentCell.classList.contains('enemy')) {
-      adjacentCell.classList.remove('enemy');
-      adjacentCell.classList.add(player);
-    }
-  });
-}
 // Вызовите эти функции для обновления статистики и меню магазина при инициализации и после каждого хода
 updateStatsDisplay();
 updateShopMenu();
