@@ -17,10 +17,9 @@
     line-height: 50px;
   }
   .player { background-color: red; }
-  .robot { background-color: blue; }
-  .robot { background-color: green; }
-  .robot { background-color: yellow; }
-  .robot { background-color: blue; }
+  .robot1 { background-color: yellow; }
+  .robot2 { background-color: green; }
+  .robot3 { background-color: purple; }
   .stats {
     margin-bottom: 10px;
   }
@@ -56,227 +55,134 @@ const boardSize = 8;
 const gameBoard = document.getElementById('gameBoard');
 const statsDisplay = document.getElementById('statsDisplay');
 const shopMenu = document.getElementById('shopMenu');
-const resources = { player: 100, robot: 100 }; // Начальные ресурсы
-const influence = { player: 0, robot: 0 }; // Начальное влияние
-const upgrades = { skipTurnReduction: 50, extraCellPlacement: 100 }; // Стоимость улучшений
+const resources = { player: 100, robot1: 100, robot2: 100, robot3: 100 };
+const influence = { player: 0, robot1: 0, robot2: 0, robot3: 0 };
+const upgrades = { skipTurnReduction: 50, extraCellPlacement: 100 };
 
+// Создание игрового поля
 for (let i = 0; i < boardSize * boardSize; i++) {
   const cell = document.createElement('div');
   cell.classList.add('cell');
   gameBoard.appendChild(cell);
 }
 
-// Функция для отображения статистики
+// Функции для отображения статистики и меню магазина
 function updateStatsDisplay() {
-  statsDisplay.innerHTML = '';
-  Object.keys(resources).forEach(player => {
-    const playerStats = document.createElement('div');
-    playerStats.textContent = player + ': Ресурсы - ' + resources[player] + ', Влияние - ' + influence[player];
-    statsDisplay.appendChild(playerStats);
-  });
+  statsDisplay.innerHTML = 'Ресурсы: ' + JSON.stringify(resources) + '<br>Влияние: ' + JSON.stringify(influence);
 }
 
-// Функция для отображения меню магазина
 function updateShopMenu() {
   shopMenu.innerHTML = '';
   Object.keys(upgrades).forEach(upgrade => {
-    const shopItem = document.createElement('div');
-    shopItem.classList.add('shop-item');
-    shopItem.textContent = upgrade + ': ' + upgrades[upgrade] + ' ресурсов';
-    shopItem.onclick = function() {
-      purchaseUpgrade('player', upgrade);
+    const upgradeElement = document.createElement('div');
+    upgradeElement.classList.add('shop-item');
+    upgradeElement.textContent = upgrade + ' - ' + upgrades[upgrade] + ' ресурсов';
+    upgradeElement.onclick = function() {
+      purchaseUpgrade(currentPlayer, upgrade);
     };
-    shopMenu.appendChild(shopItem);
+    shopMenu.appendChild(upgradeElement);
   });
 }
+
+// Классы и стратегии для роботов
+const robots = [
+  {
+    class: 'robot1',
+    color: 'yellow',
+    strategy: aggressiveStrategy
+  },
+  {
+    class: 'robot2',
+    color: 'green',
+    strategy: defensiveStrategy
+  },
+  {
+    class: 'robot3',
+    color: 'purple',
+    strategy: balancedStrategy
+  }
+];
 
 // Логика игры
 let currentPlayer = 'player';
-const players = ['player', 'robot'];
-let skipTurnChance = 0.25; // Изначальный шанс пропуска хода
+const players = ['player', 'robot1', 'robot2', 'robot3'];
 
-gameBoard.addEventListener('click', function(event) {
-  if (event.target.classList.contains('cell')) {
-    makeMove(currentPlayer, event.target);
-    switchPlayer();
-    robotMoves();
-  }
-});
-
-function shouldSkipMove() {
-  // Возвращает true с вероятностью, равной skipTurnChance
-  return Math.random() < skipTurnChance;
+// Функции стратегий
+function aggressiveStrategy(robot) {
+  // Робот пытается захватить клетку с наибольшим ресурсом
+  const targetCell = findCellWithMostResources();
+  makeMove(robot.class, targetCell);
 }
 
-function switchPlayer() {
-  // Передаем ход следующему игроку
-  currentPlayer = players[(players.indexOf(currentPlayer) + 1) % players.length];
+function defensiveStrategy(robot) {
+  // Робот пытается укрепить свои позиции, выбирая клетку с наименьшим ресурсом
+  const targetCell = findCellWithLeastResources();
+  makeMove(robot.class, targetCell);
 }
 
-// Функция оценки хода для ИИ
-function evaluateMove(cell, playerClass) {
-  let score = 0;
-  const rowIndex = Math.floor(cell.index / boardSize);
-  const colIndex = cell.index % boardSize;
-  const directions = [-1, 1, -boardSize, boardSize]; // Вверх, вниз, влево, вправо
-  directions.forEach(direction => {
-    const neighborIndex = cell.index + direction;
-    if (neighborIndex >= 0 && neighborIndex < boardSize * boardSize) {
-      const neighborCell = gameBoard.children[neighborIndex];
-      if (neighborCell.classList.contains(playerClass)) {
-        score++;
-      }
+function balancedStrategy(robot) {
+  // Робот пытается поддерживать баланс, выбирая случайную клетку
+  const targetCell = findRandomCell();
+  makeMove(robot.class, targetCell);
+}
+
+// Вспомогательные функции для стратегий
+function findCellWithMostResources() {
+  // Предположим, что каждая клетка имеет свойство 'resources'
+  let maxResources = 0;
+  let cellWithMostResources = null;
+  gameBoard.childNodes.forEach(cell => {
+    if (cell.resources > maxResources) {
+      maxResources = cell.resources;
+      cellWithMostResources = cell;
     }
   });
-  return score;
+  return cellWithMostResources;
 }
 
-// Обновленная функция robotMoves с оценкой ходов
-function robotMoves() {
-  const robotClass = 'robot';
-  const cells = Array.from(gameBoard.children);
-  const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
-  let bestMove = null;
-  let bestScore = -Infinity;
-  // Робот выбирает лучший ход на основе оценки
-  for (let j = 0; j < emptyCells.length; j++) {
-    const currentScore = evaluateMove(emptyCells[j], robotClass);
-    if (currentScore > bestScore) {
-      bestScore = currentScore;
-      bestMove = emptyCells[j];
+function findCellWithLeastResources() {
+  // Предположим, что каждая клетка имеет свойство 'resources'
+  let minResources = Infinity;
+  let cellWithLeastResources = null;
+  gameBoard.childNodes.forEach(cell => {
+    if (cell.resources < minResources) {
+      minResources = cell.resources;
+      cellWithLeastResources = cell;
     }
-  }
-  if (bestMove) {
-    makeMove(robotClass, bestMove);
-  }
-  currentPlayer = 'player'; // Возвращаем ход игроку
+  });
+  return cellWithLeastResources;
 }
 
-function updateEconomy(player) {
-  // Увеличиваем ресурсы и влияние за каждую захваченную клетку
-  resources[player] += 10;
-  influence[player] += 1;
+function findRandomCell() {
+  // Выбор случайной клетки
+  const cells = Array.from(gameBoard.childNodes);
+  return cells[Math.floor(Math.random() * cells.length)];
 }
 
-function makeMove(player, cell) {
-  if (shouldSkipMove()) {
-    alert(player + ' пропускает ход!');
-  } else {
-    if (!cell.classList.contains(player)) {
-      players.forEach(p => cell.classList.remove(p));
-      cell.classList.add(player);
-      updateEconomy(player); // Обновляем экономику после успешного хода
-      updateStatsDisplay(); // Обновляем отображение статистики
-    }
-  }
-}
-
-function purchaseUpgrade(player, upgrade) {
-  if (resources[player] >= upgrades[upgrade]) {
-    resources[player] -= upgrades[upgrade];
-    if (upgrade === 'skipTurnReduction') {
-      skipTurnChance -= 0.05; // Уменьшаем шанс пропуска хода на 5%
-      skipTurnChance = Math.max(skipTurnChance, 0); // Гарантируем, что шанс не уйдет в отрицательное значение
-    } else if (upgrade === 'extraCellPlacement') {
-      // Позволяем ставить на одну клетку больше
-    }
+// Функция совершения хода
+function makeMove(playerClass, cell) {
+  // Изменение цвета клетки и обновление ресурсов
+  if (cell && !cell.classList.contains('player') && !cell.classList.contains('robot')) {
+    cell.classList.add(playerClass);
+    resources[playerClass] -= 10; // Предположим, что захват клетки стоит 10 ресурсов
+    influence[playerClass] += 1; // Предположим, что захват клетки увеличивает влияние на 1
     updateStatsDisplay();
-  } else {
-    alert('Недостаточно ресурсов для покупки улучшения!');
   }
 }
 
-// Инициализация угловых клеток для каждого игрока
-const corners = [
-  { index: 0, player: 'player' }, // верхний левый угол
-  { index: boardSize - 1, player: 'robot' } // верхний правый угол
-];
-corners.forEach(corner => {
-  const cell = gameBoard.children[corner.index];
-  cell.classList.add(corner.player);
-});
-
-// Вызов функций для обновления статистики и меню магазина при инициализации и после каждого хода
-updateStatsDisplay();
-updateShopMenu();
-
-
-
-  // Агрессивная стратегия: Робот старается захватить как можно больше клеток
-function aggressiveStrategy() {
-  const robotClass = 'robot';
-  const cells = Array.from(gameBoard.children);
-  const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
-  let bestMove = null;
-  let bestScore = -Infinity;
-
-  // Робот выбирает ход, который дает максимальное количество соседних клеток
-  for (let j = 0; j < emptyCells.length; j++) {
-    const currentScore = evaluateMove(emptyCells[j], robotClass);
-    if (currentScore > bestScore) {
-      bestScore = currentScore;
-      bestMove = emptyCells[j];
-    }
-  }
-
-  if (bestMove) {
-    makeMove(robotClass, bestMove);
-  }
+// Инициализация игры и первоначальное распределение клеток
+function initializeGame() {
+  // Распределение начальных ресурсов и влияния
+  gameBoard.childNodes.forEach(cell => {
+    cell.resources = Math.floor(Math.random() * 100); // Предположим, что каждая клетка имеет случайное количество ресурсов от 0 до 99
+  });
+  updateStatsDisplay();
+  updateShopMenu();
 }
 
-// Оборонительная стратегия: Робот старается блокировать ходы игрока
-function defensiveStrategy() {
-  const robotClass = 'robot';
-  const playerClass = 'player';
-  const cells = Array.from(gameBoard.children);
-  const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass) && !cell.classList.contains(playerClass));
-  let bestMove = null;
-  let bestScore = -Infinity;
-
-  // Робот выбирает ход, который блокирует потенциально выигрышные ходы игрока
-  for (let j = 0; j < emptyCells.length; j++) {
-    const currentScore = -evaluateMove(emptyCells[j], playerClass);
-    if (currentScore > bestScore) {
-      bestScore = currentScore;
-      bestMove = emptyCells[j];
-    }
-  }
-
-  if (bestMove) {
-    makeMove(robotClass, bestMove);
-  }
-}
-
-// Сбалансированная стратегия: Робот чередует агрессивные и оборонительные ходы
-function balancedStrategy() {
-  const turnNumber = Math.floor(Math.random() * 10);
-  if (turnNumber % 2 === 0) {
-    aggressiveStrategy();
-  } else {
-    defensiveStrategy();
-  }
-}
-
-// Реализация выбора стратегии ИИ
-function robotMoves() {
-  // Выбор стратегии в зависимости от ситуации
-  if (resources['robot'] > resources['player']) {
-    aggressiveStrategy();
-  } else if (influence['player'] > influence['robot']) {
-    defensiveStrategy();
-  } else {
-    balancedStrategy();
-  }
-}
-
-
+// Запуск игры
+initializeGame();
 </script>
-</body>
-</html>
-
-
-</script>
-
 </body>
 </html>
 
