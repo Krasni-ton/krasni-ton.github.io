@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Стратегическая игра: Захват территории</title>
+<style>
+  .game-board {
+    display: grid;
+    grid-template-columns: repeat(8, 50px);
+    grid-template-rows: repeat(8, 50px);
+  }
+  .cell {
+    width: 50px;
+    height: 50px;
+    border: 1px solid #000;
+    text-align: center;
+    line-height: 50px;
+  }
+  .player { background-color: blue; }
+  .robot1 { background-color: red; }
+  .robot2 { background-color: green; }
+  .robot3 { background-color: yellow; }
+  .stats {
+    margin-bottom: 10px;
+  }
+  .shop-menu {
+    margin-top: 10px;
+  }
+  .shop-item {
+    cursor: pointer;
+    padding: 5px;
+    border: 1px solid #000;
+    display: inline-block;
+    margin-right: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="stats" id="statsDisplay">
+  <!-- Статистика ресурсов и влияния будет отображаться здесь -->
+</div>
+
+<div id="gameBoard" class="game-board">
+  <!-- Игровое поле будет сгенерировано здесь -->
+</div>
+
+<div class="shop-menu" id="shopMenu">
+  <!-- Меню магазина будет отображаться здесь -->
+</div>
+
+<script>
+// Инициализация игрового поля и переменных экономики/политики
+const boardSize = 8;
+const gameBoard = document.getElementById('gameBoard');
+const statsDisplay = document.getElementById('statsDisplay');
+const shopMenu = document.getElementById('shopMenu');
+const resources = { player: 100, robot1: 100, robot2: 100, robot3: 100 }; // Начальные ресурсы
+const influence = { player: 0, robot1: 0, robot2: 0, robot3: 0 }; // Начальное влияние
+const upgrades = { skipTurnReduction: 50, extraCellPlacement: 100 }; // Стоимость улучшений
+
+for (let i = 0; i < boardSize * boardSize; i++) {
+  const cell = document.createElement('div');
+  cell.classList.add('cell');
+  gameBoard.appendChild(cell);
+}
+
+// Функция для отображения статистики
+function updateStatsDisplay() {
+  statsDisplay.innerHTML = '';
+  Object.keys(resources).forEach(player => {
+    const playerStats = document.createElement('div');
+    playerStats.textContent = player + ': Ресурсы - ' + resources[player] + ', Влияние - ' + influence[player];
+    statsDisplay.appendChild(playerStats);
+  });
+}
+
+// Функция для отображения меню магазина
+function updateShopMenu() {
+  shopMenu.innerHTML = '';
+  Object.keys(upgrades).forEach(upgrade => {
+    const shopItem = document.createElement('div');
+    shopItem.classList.add('shop-item');
+    shopItem.textContent = upgrade + ': ' + upgrades[upgrade] + ' ресурсов';
+    shopItem.onclick = function() {
+      purchaseUpgrade('player', upgrade);
+    };
+    shopMenu.appendChild(shopItem);
+  });
+}
+
+// Логика игры
+let currentPlayer = 'player';
+const players = ['player', 'robot1', 'robot2', 'robot3'];
+
+gameBoard.addEventListener('click', function(event) {
+  if (event.target.classList.contains('cell')) {
+    makeMove(currentPlayer, event.target);
+    switchPlayer();
+    robotMoves();
+  }
+});
+
+function shouldSkipMove() {
+  // Возвращает true с вероятностью 25%
+  return Math.random() < 0.25;
+}
+
+function switchPlayer() {
+  // Передаем ход следующему игроку
+  currentPlayer = players[(players.indexOf(currentPlayer) + 1) % players.length];
+}
+
+function robotMoves() {
+  // Логика для движения роботов
+  for (let i = 1; i < players.length; i++) {
+    const robotClass = players[i];
+    const cells = Array.from(gameBoard.children);
+    const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
+    if (emptyCells.length > 0) {
+      const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      makeMove(robotClass, randomCell);
+    }
+  }
+  currentPlayer = 'player'; // Возвращаем ход игроку
+}
+
+function updateEconomy(player) {
+  // Увеличиваем ресурсы и влияние за каждую захваченную клетку
+  resources[player] += 10;
+  influence[player] += 1;
+}
+
+function isAdjacent(player, cell) {
+  // Получаем индекс текущей клетки
+  const index = Array.from(cell.parentNode.children).indexOf(cell);
+  const row = Math.floor(index / boardSize);
+  const col = index % boardSize;
+
+  // Проверяем соседние клетки
+  const adjacentIndices = [
+    index - 1, // слева
+    index + 1, // справа
+    index - boardSize, // сверху
+    index + boardSize, // снизу
+  ];
+
+  return adjacentIndices.some(adjacentIndex => {
+    // Проверяем, что индекс находится в пределах доски
+    if (adjacentIndex < 0 || adjacentIndex >= boardSize * boardSize) {
+      return false;
+    }
+
+    // Проверяем, что соседняя клетка не выходит за пределы строки или столбца
+    const adjacentRow = Math.floor(adjacentIndex / boardSize);
+    const adjacentCol = adjacentIndex % boardSize;
+    if (col === 0 && adjacentCol === boardSize - 1 || col === boardSize - 1 && adjacentCol === 0) {
+      return false;
+    }
+
+    // Проверяем, принадлежит ли соседняя клетка игроку
+    const adjacentCell = cell.parentNode.children[adjacentIndex];
+    return adjacentCell.classList.contains(player);
+  });
+}
+
+function makeMove(player, cell) {
+  if (shouldSkipMove()) {
+    alert(player + ' пропускает ход!');
+  } else {
+    if (!cell.classList.contains(player) && isAdjacent(player, cell)) {
+      players.forEach(p => cell.classList.remove(p));
+      cell.classList.add(player);
+      updateEconomy(player); // Обновляем экономику после успешного хода
+      updateStatsDisplay(); // Обновляем отображение статистики
+    }
+  }
+}
+
+function purchaseUpgrade(player, upgrade) {
+  if (resources[player] >= upgrades[upgrade]) {
+    resources[player] -= upgrades[upgrade];
+    if (upgrade === 'skipTurnReduction') {
+      // Уменьшаем вероятность пропуска хода
+    } else if (upgrade === 'extraCellPlacement') {
+      // Позволяем ставить на одну клетку больше
+    }
+    updateStatsDisplay();
+  } else {
+    alert('Недостаточно ресурсы для покупки улучшения!');
+  }
+}
+
+const corners = [
+  { index: 0, player: 'player' }, // верхний левый угол
+  { index: boardSize - 1, player: 'robot1' }, // верхний правый угол
+  { index: boardSize * (boardSize - 1), player: 'robot2' }, // нижний левый угол
+  { index: boardSize * boardSize - 1, player: 'robot3' } // нижний правый угол
+];
+corners.forEach(corner => {
+  const cell = gameBoard.children[corner.index];
+  cell.classList.add(corner.player);
+});
+
+function checkAdjacentCells(cellIndex, player) {
+  let adjacentIndices = [
+    cellIndex - boardSize, // верх
+    cellIndex + boardSize, // низ
+    cellIndex - 1, // лево
+    cellIndex + 1 // право
+  ];
+  // Удаление индексов, выходящих за пределы доски
+  adjacentIndices = adjacentIndices.filter(index => index >= 0 && index < boardSize * boardSize);
+  // Удаление индексов из другого ряда
+  if (cellIndex % boardSize === 0) {
+    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== boardSize - 1);
+  }
+  if ((cellIndex + 1) % boardSize === 0) {
+    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== 0);
+  }
+  // Проверка и захват соседних клеток
+  adjacentIndices.forEach(index => {
+    const adjacentCell = gameBoard.children[index];
+    if (!adjacentCell.classList.contains(player)) {
+      adjacentCell.classList.add(player);
+    }
+  });
+}
+function captureEnemyCells(cellIndex, player) {
+  let adjacentIndices = [
+    cellIndex - boardSize, // верх
+    cellIndex + boardSize, // низ
+    cellIndex - 1, // лево
+    cellIndex + 1 // право
+  ];
+  // Удаление индексов, выходящих за пределы доски
+  adjacentIndices = adjacentIndices.filter(index => index >= 0 && index < boardSize * boardSize);
+  // Удаление индексов из другого ряда
+  if (cellIndex % boardSize === 0) {
+    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== boardSize - 1);
+  }
+  if ((cellIndex + 1) % boardSize === 0) {
+    adjacentIndices = adjacentIndices.filter(index => index % boardSize !== 0);
+  }
+  // Проверка и захват соседних клеток противника
+  adjacentIndices.forEach(index => {
+    const adjacentCell = gameBoard.children[index];
+    // Проверяем, принадлежит ли клетка противнику
+    if (adjacentCell.classList.contains('enemy')) {
+      adjacentCell.classList.remove('enemy');
+      adjacentCell.classList.add(player);
+    }
+  });
+}
+// Вызовите эти функции для обновления статистики и меню магазина при инициализации и после каждого хода
+updateStatsDisplay();
+updateShopMenu();
+
+</script>
+
+</body>
+</html>
