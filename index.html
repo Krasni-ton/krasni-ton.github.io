@@ -198,6 +198,74 @@ updateStatsDisplay();
 updateShopMenu();
 
 </script>
+// Функции оценки для разных стратегий
+function aggressiveStrategy(cell, playerClass) {
+  // Агрессивная стратегия: оценивает ходы на основе максимального захвата территории
+  let score = 0;
+  // ... (логика оценки хода)
+  return score;
+}
+
+function defensiveStrategy(cell, playerClass) {
+  // Оборонительная стратегия: оценивает ходы на основе защиты своих клеток
+  let score = 0;
+  // ... (логика оценки хода)
+  return score;
+}
+
+function expansionStrategy(cell, playerClass) {
+  // Стратегия расширения: оценивает ходы на основе расширения территории
+  let score = 0;
+  // ... (логика оценки хода)
+  return score;
+}
+
+function randomStrategy(cell, playerClass) {
+  // Случайная стратегия: выбирает ходы случайным образом
+  return Math.random();
+}
+
+// Функция для выбора стратегии робота
+function chooseRobotStrategy(robotId) {
+  switch (robotId) {
+    case 1: return aggressiveStrategy;
+    case 2: return defensiveStrategy;
+    case 3: return expansionStrategy;
+    case 4: return randomStrategy;
+    // Робот 5 без стратегии, возвращает нулевой счет
+    default: return () => 0;
+  }
+}
+
+// Функция robotMoves обновлена для поддержки множества роботов
+function robotMoves(robotId) {
+  const robotClass = 'robot' + robotId;
+  const strategy = chooseRobotStrategy(robotId);
+  const cells = Array.from(gameBoard.children);
+  const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
+  let bestMove = null;
+  let bestScore = -Infinity;
+
+  // Робот выбирает лучший ход на основе выбранной стратегии
+  for (let j = 0; j < emptyCells.length; j++) {
+    const currentScore = strategy(emptyCells[j], robotClass);
+    if (currentScore > bestScore) {
+      bestScore = currentScore;
+      bestMove = emptyCells[j];
+    }
+  }
+
+  if (bestMove) {
+    makeMove(robotClass, bestMove);
+  }
+}
+
+// ... (остальная часть кода игры)
+
+// Инициализация роботов и их стратегий
+for (let i = 1; i <= 5; i++) {
+  robotMoves(i);
+}
 
 </body>
 </html>
