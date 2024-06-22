@@ -16,8 +16,8 @@
     text-align: center;
     line-height: 50px;
   }
-  .player { background-color: blue; }
-  .robot1 { background-color: red; }
+  .player { background-color: red; }
+  .robot1 { background-color: blue; }
   .robot2 { background-color: green; }
   .robot3 { background-color: yellow; }
   .stats {
@@ -103,7 +103,7 @@ gameBoard.addEventListener('click', function(event) {
 
 function shouldSkipMove() {
   // Возвращает true с вероятностью 25%
-  return Math.random() < 0.25;
+  return Math.random() < 0.20;
 }
 
 function switchPlayer() {
@@ -137,33 +137,7 @@ function isAdjacent(player, cell) {
   const row = Math.floor(index / boardSize);
   const col = index % boardSize;
 
-  // Проверяем соседние клетки
-  const adjacentIndices = [
-    index - 1, // слева
-    index + 1, // справа
-    index - boardSize, // сверху
-    index + boardSize, // снизу
-  ];
-
-  return adjacentIndices.some(adjacentIndex => {
-    // Проверяем, что индекс находится в пределах доски
-    if (adjacentIndex < 0 || adjacentIndex >= boardSize * boardSize) {
-      return false;
-    }
-
-    // Проверяем, что соседняя клетка не выходит за пределы строки или столбца
-    const adjacentRow = Math.floor(adjacentIndex / boardSize);
-    const adjacentCol = adjacentIndex % boardSize;
-    if (col === 0 && adjacentCol === boardSize - 1 || col === boardSize - 1 && adjacentCol === 0) {
-      return false;
-    }
-
-    // Проверяем, принадлежит ли соседняя клетка игроку
-    const adjacentCell = cell.parentNode.children[adjacentIndex];
-    return adjacentCell.classList.contains(player);
-  });
-}
-
+  
 function makeMove(player, cell) {
   if (shouldSkipMove()) {
     alert(player + ' пропускает ход!');
@@ -218,13 +192,7 @@ function checkAdjacentCells(cellIndex, player) {
   if ((cellIndex + 1) % boardSize === 0) {
     adjacentIndices = adjacentIndices.filter(index => index % boardSize !== 0);
   }
-  // Проверка и захват соседних клеток
-  adjacentIndices.forEach(index => {
-    const adjacentCell = gameBoard.children[index];
-    if (!adjacentCell.classList.contains(player)) {
-      adjacentCell.classList.add(player);
-    }
-  });
+  
 }
 function captureEnemyCells(cellIndex, player) {
   let adjacentIndices = [
