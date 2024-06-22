@@ -112,15 +112,19 @@ function switchPlayer() {
   currentPlayer = players[(players.indexOf(currentPlayer) + 1) % players.length];
 }
 
+// Обновленная функция robotMoves
 function robotMoves() {
   // Логика для движения роботов
   for (let i = 1; i < players.length; i++) {
     const robotClass = players[i];
     const cells = Array.from(gameBoard.children);
     const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
-    if (emptyCells.length > 0) {
-      const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-      makeMove(robotClass, randomCell);
+    // Роботы будут делать по три хода за один ход игрока
+    for (let j = 0; j < 3; j++) {
+      if (emptyCells.length > 0) {
+        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        makeMove(robotClass, randomCell);
+      }
     }
   }
   currentPlayer = 'player'; // Возвращаем ход игроку
@@ -156,7 +160,7 @@ function purchaseUpgrade(player, upgrade) {
     }
     updateStatsDisplay();
   } else {
-    alert('Недостаточно ресурсы для покупки улучшения!');
+    alert('Недостаточно ресурсов для покупки улучшения!');
   }
 }
 
@@ -179,3 +183,4 @@ updateShopMenu();
 
 </body>
 </html>
+
