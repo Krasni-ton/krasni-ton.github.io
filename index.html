@@ -17,9 +17,7 @@
     line-height: 50px;
   }
   .player { background-color: red; }
-  .robot1 { background-color: blue; }
-  .robot2 { background-color: green; }
-  .robot3 { background-color: yellow; }
+  .robot { background-color: blue; }
   .stats {
     margin-bottom: 10px;
   }
@@ -55,8 +53,8 @@ const boardSize = 8;
 const gameBoard = document.getElementById('gameBoard');
 const statsDisplay = document.getElementById('statsDisplay');
 const shopMenu = document.getElementById('shopMenu');
-const resources = { player: 100, robot1: 100, robot2: 100, robot3: 100 }; // Начальные ресурсы
-const influence = { player: 0, robot1: 0, robot2: 0, robot3: 0 }; // Начальное влияние
+const resources = { player: 100, robot: 100 }; // Начальные ресурсы
+const influence = { player: 0, robot: 0 }; // Начальное влияние
 const upgrades = { skipTurnReduction: 50, extraCellPlacement: 100 }; // Стоимость улучшений
 
 for (let i = 0; i < boardSize * boardSize; i++) {
@@ -91,7 +89,7 @@ function updateShopMenu() {
 
 // Логика игры
 let currentPlayer = 'player';
-const players = ['player', 'robot1', 'robot2', 'robot3'];
+const players = ['player', 'robot'];
 let skipTurnChance = 0.25; // Изначальный шанс пропуска хода
 
 gameBoard.addEventListener('click', function(event) {
@@ -112,15 +110,41 @@ function switchPlayer() {
   currentPlayer = players[(players.indexOf(currentPlayer) + 1) % players.length];
 }
 
-// Обновленная функция robotMoves
+// Функция оценки хода для ИИ
+function evaluateMove(cell, playerClass) {
+  let score = 0;
+  const rowIndex = Math.floor(cell.index / boardSize);
+  const colIndex = cell.index % boardSize;
+  const directions = [-1, 1, -boardSize, boardSize]; // Вверх, вниз, влево, вправо
+  directions.forEach(direction => {
+    const neighborIndex = cell.index + direction;
+    if (neighborIndex >= 0 && neighborIndex < boardSize * boardSize) {
+      const neighborCell = gameBoard.children[neighborIndex];
+      if (neighborCell.classList.contains(playerClass)) {
+        score++;
+      }
+    }
+  });
+  return score;
+}
+
+// Обновленная функция robotMoves с оценкой ходов
 function robotMoves() {
-  // Логика для движения роботов
-  for (let i = 1; i < players.length; i++) {
-    const robotClass = players[i];
-    const cells = Array.from(gameBoard.children);
-    const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
-    // Роботы будут делать по три хода за один ход игрока
-   
+  const robotClass = 'robot';
+  const cells = Array.from(gameBoard.children);
+  const emptyCells = cells.filter(cell => !cell.classList.contains(robotClass));
+  let bestMove = null;
+  let bestScore = -Infinity;
+  // Робот выбирает лучший ход на основе оценки
+  for (let j = 0; j < emptyCells.length; j++) {
+    const currentScore = evaluateMove(emptyCells[j], robotClass);
+    if (currentScore > bestScore) {
+      bestScore = currentScore;
+      bestMove = emptyCells[j];
+    }
+  }
+  if (bestMove) {
+    makeMove(robotClass, bestMove);
   }
   currentPlayer = 'player'; // Возвращаем ход игроку
 }
@@ -159,20 +183,25 @@ function purchaseUpgrade(player, upgrade) {
   }
 }
 
+// Инициализация угловых клеток для каждого игрока
 const corners = [
   { index: 0, player: 'player' }, // верхний левый угол
-  { index: boardSize - 1, player: 'robot1' }, // верхний правый угол
-  { index: boardSize * (boardSize - 1), player: 'robot2' }, // нижний левый угол
-  { index: boardSize * boardSize - 1, player: 'robot3' } // нижний правый угол
+  { index: boardSize - 1, player: 'robot' } // верхний правый угол
 ];
 corners.forEach(corner => {
   const cell = gameBoard.children[corner.index];
   cell.classList.add(corner.player);
 });
 
-// Вызовите эти функции для обновления статистики и меню магазина при инициализации и после каждого хода
+// Вызов функций для обновления статистики и меню магазина при инициализации и после каждого хода
 updateStatsDisplay();
 updateShopMenu();
+
+</script>
+
+</body>
+</html>
+
 
 </script>
 
